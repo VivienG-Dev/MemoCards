@@ -14,9 +14,7 @@ export const auth = betterAuth({
     requireEmailVerification: false,
   },
   plugins: [
-    expo({
-      scheme: "memocards",
-    }),
+    expo() as any, // Temporary fix for version compatibility
   ],
   trustedOrigins: [
     "http://localhost:8081",
