@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import { auth } from "./auth.js";
 import { authGuard, AuthenticatedRequest } from "./middleware/auth.js";
 import { flashcardsRoutes } from "./routes/flashcards.js";
+import { flashcardSetsRoutes } from "./routes/flashcard-sets.js";
 
 const fastify = Fastify({
   logger: true,
@@ -135,6 +136,7 @@ fastify.get("/api/me", { preHandler: [authGuard] }, async (request) => {
 
 // Register flashcards routes
 await fastify.register(flashcardsRoutes);
+await fastify.register(flashcardSetsRoutes);
 
 const start = async () => {
   try {
