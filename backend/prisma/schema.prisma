@@ -15,15 +15,16 @@ datasource db {
 
 // Better Auth generated schema
 model User {
-  id            String    @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
+  email         String         @unique
+  emailVerified Boolean        @default(false)
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   sessions      Session[]
   accounts      Account[]
+  flashcardSets FlashcardSet[]
 
   @@map("user")
 }
@@ -70,4 +71,31 @@ model Verification {
   updatedAt  DateTime? @updatedAt
 
   @@map("verification")
+}
+
+model FlashcardSet {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  language    String      @default("English")
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flashcards  Flashcard[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("flashcard_set")
+}
+
+model Flashcard {
+  id              String       @id @default(cuid())
+  question        String
+  answer          String
+  topic           String
+  flashcardSetId  String
+  flashcardSet    FlashcardSet @relation(fields: [flashcardSetId], references: [id], onDelete: Cascade)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("flashcard")
 }
