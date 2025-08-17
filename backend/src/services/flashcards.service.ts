@@ -6,14 +6,14 @@ import { z } from "zod";
 const MapCardZ = z.object({
   q: z.string(),
   a: z.string(),
-  topic: z.string().optional(),
+  topic: z.string(), // Make required to match JSON schema
 });
 const MapCardsZ = z.array(MapCardZ);
 
 const FinalCardZ = z.object({
   q: z.string().min(6).max(180),
   a: z.string().min(1).max(120),
-  topic: z.string().optional(),
+  topic: z.string(), // Make required to match JSON schema
   difficulty: z.enum(["easy", "medium", "hard"]).optional(),
 });
 const FinalCardsZ = z.array(FinalCardZ).min(1).max(50);
@@ -32,7 +32,7 @@ export async function generateFromOcr(
     const content = await chatJson([
       { role: "user", content: mapPrompt(ch, 6, lang) },
     ]);
-    const arr = MapCardsZ.safeParse(JSON.parse(content));
+    const arr = MapCardsZ.safeParse(content);
     if (arr.success) candidates.push(...arr.data);
   }
 
@@ -61,7 +61,7 @@ export async function generateFromOcr(
       true
     );
     try {
-      finalArr = JSON.parse(reducedJson);
+      finalArr = reducedJson; // reducedJson is already parsed
     } catch {
       // Fall back to unique if parsing fails
     }
