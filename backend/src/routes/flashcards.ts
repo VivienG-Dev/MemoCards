@@ -34,17 +34,23 @@ export async function flashcardsRoutes(fastify: FastifyInstance) {
           200: {
             type: "object",
             properties: {
-              cards: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    q: { type: "string" },
-                    a: { type: "string" },
-                    topic: { type: "string" },
-                    difficulty: {
-                      type: "string",
-                      enum: ["easy", "medium", "hard"],
+              success: { type: "boolean" },
+              data: {
+                type: "object",
+                properties: {
+                  cards: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        q: { type: "string" },
+                        a: { type: "string" },
+                        topic: { type: "string" },
+                        difficulty: {
+                          type: "string",
+                          enum: ["easy", "medium", "hard"],
+                        },
+                      },
                     },
                   },
                 },
@@ -56,6 +62,7 @@ export async function flashcardsRoutes(fastify: FastifyInstance) {
           400: {
             type: "object",
             properties: {
+              success: { type: "boolean" },
               error: { type: "string" },
               details: { type: "array" },
             },
@@ -63,8 +70,8 @@ export async function flashcardsRoutes(fastify: FastifyInstance) {
           500: {
             type: "object",
             properties: {
+              success: { type: "boolean" },
               error: { type: "string" },
-              message: { type: "string" },
             },
           },
         },
@@ -80,7 +87,10 @@ export async function flashcardsRoutes(fastify: FastifyInstance) {
         const cards = await generateFromOcr(text, finalCount, lang);
 
         return {
-          cards,
+          success: true,
+          data: {
+            cards,
+          },
           userId: authRequest.user.id,
           processedChunks: Math.ceil(text.length / 1800),
         };
@@ -89,14 +99,15 @@ export async function flashcardsRoutes(fastify: FastifyInstance) {
 
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
+            success: false,
             error: "Invalid input",
             details: (error as z.ZodError).issues,
           });
         }
 
         return reply.status(500).send({
-          error: "Failed to generate flashcards",
-          message: error instanceof Error ? error.message : "Unknown error",
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to generate flashcards",
         });
       }
     }

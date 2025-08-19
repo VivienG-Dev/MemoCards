@@ -19,7 +19,81 @@ export async function flashcardSetsRoutes(fastify: FastifyInstance) {
       };
 
       try {
-        // Create flashcard set with flashcards in a transaction
+        // Generate MCQ options for each flashcard
+        const flashcardsWithMCQ = await Promise.all(
+          flashcards.map(async (card) => {
+            try {
+              // Generate MCQ options using AI
+              const prompt = `You are creating multiple choice questions for a study app.
+
+Question: "${card.question}"
+Correct Answer: "${card.answer}"
+Topic: "${card.topic}"
+
+Generate exactly 3 incorrect but plausible options that:
+1. Are related to the topic and could reasonably confuse someone studying
+2. Are similar in length and complexity to the correct answer
+3. Are not obviously wrong or nonsensical
+4. Test actual understanding rather than just guessing
+
+Return ONLY a JSON array of the 3 incorrect options, nothing else.
+
+Example format: ["option1", "option2", "option3"]`;
+
+              const response = await chatJson([
+                {
+                  role: "user",
+                  content: prompt
+                }
+              ], true);
+
+              // Parse the response - it should be an array of 3 strings
+              let mcqOptions: string[] = [];
+              
+              if (Array.isArray(response)) {
+                mcqOptions = response.slice(0, 3); // Take first 3 options
+              } else if (response.options && Array.isArray(response.options)) {
+                mcqOptions = response.options.slice(0, 3);
+              } else if (response.distractors && Array.isArray(response.distractors)) {
+                mcqOptions = response.distractors.slice(0, 3);
+              } else {
+                throw new Error("Invalid response format from AI");
+              }
+
+              // Validate we have 3 options and they're all strings
+              if (mcqOptions.length !== 3 || !mcqOptions.every(opt => typeof opt === 'string' && opt.trim())) {
+                throw new Error("AI did not generate exactly 3 valid options");
+              }
+
+              return {
+                question: card.question,
+                answer: card.answer,
+                topic: card.topic,
+                mcqOptions,
+                mcqGenerated: true
+              };
+            } catch (error) {
+              console.error(`Error generating MCQ for card "${card.question}":`, error);
+              
+              // Fallback: create generic options
+              const fallbackOptions = [
+                `Alternative answer A`,
+                `Alternative answer B`,
+                `Alternative answer C`
+              ];
+              
+              return {
+                question: card.question,
+                answer: card.answer,
+                topic: card.topic,
+                mcqOptions: fallbackOptions,
+                mcqGenerated: false // Mark as fallback
+              };
+            }
+          })
+        );
+
+        // Create flashcard set with flashcards including MCQ options
         const flashcardSet = await db.flashcardSet.create({
           data: {
             title,
@@ -27,10 +101,12 @@ export async function flashcardSetsRoutes(fastify: FastifyInstance) {
             language,
             userId: authRequest.user.id,
             flashcards: {
-              create: flashcards.map(card => ({
+              create: flashcardsWithMCQ.map(card => ({
                 question: card.question,
                 answer: card.answer,
                 topic: card.topic,
+                mcqOptions: card.mcqOptions,
+                mcqGenerated: card.mcqGenerated,
               }))
             }
           },
@@ -86,8 +162,8 @@ export async function flashcardSetsRoutes(fastify: FastifyInstance) {
       } catch (error) {
         console.error("Error fetching flashcard sets:", error);
         reply.status(500).send({
-          error: "Failed to fetch flashcard sets",
-          message: error instanceof Error ? error.message : "Unknown error"
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to fetch flashcard sets",
         });
       }
     }
