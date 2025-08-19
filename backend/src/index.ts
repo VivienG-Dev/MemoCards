@@ -4,13 +4,14 @@ import { auth } from "./auth.js";
 import { authGuard, AuthenticatedRequest } from "./middleware/auth.js";
 import { flashcardsRoutes } from "./routes/flashcards.js";
 import { flashcardSetsRoutes } from "./routes/flashcard-sets.js";
+import { studySummariesRoutes } from "./routes/study-summaries.js";
 
 const fastify = Fastify({
   logger: true,
 });
 
 await fastify.register(cors, {
-  origin: ["http://localhost:8081", "exp://localhost:8081"],
+  origin: ["http://localhost:8081", "exp://localhost:8081", "http://localhost:3000", "http://localhost:5173"],
   credentials: true,
 });
 
@@ -137,6 +138,7 @@ fastify.get("/api/me", { preHandler: [authGuard] }, async (request) => {
 // Register flashcards routes
 await fastify.register(flashcardsRoutes);
 await fastify.register(flashcardSetsRoutes);
+await fastify.register(studySummariesRoutes);
 
 const start = async () => {
   try {

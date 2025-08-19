@@ -19,6 +19,7 @@ export const auth = betterAuth({
   trustedOrigins: [
     "http://localhost:8081",
     "exp://localhost:8081",
+    "http://localhost:5173",
     "memocards://",
   ],
   secret: process.env.BETTER_AUTH_SECRET,
