@@ -25,6 +25,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   flashcardSets FlashcardSet[]
+  studySummaries StudySummary[]
 
   @@map("user")
 }
@@ -74,15 +75,16 @@ model Verification {
 }
 
 model FlashcardSet {
-  id          String      @id @default(cuid())
-  title       String
-  description String?
-  language    String      @default("English")
-  userId      String
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  flashcards  Flashcard[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id            String         @id @default(cuid())
+  title         String
+  description   String?
+  language      String         @default("English")
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flashcards    Flashcard[]
+  studySummaries StudySummary[] // Summaries can be linked to flashcard sets
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@map("flashcard_set")
 }
@@ -92,10 +94,29 @@ model Flashcard {
   question        String
   answer          String
   topic           String
+  mcqOptions      Json?        // Array of 3 distractor options for MCQ
+  mcqGenerated    Boolean      @default(false)
   flashcardSetId  String
   flashcardSet    FlashcardSet @relation(fields: [flashcardSetId], references: [id], onDelete: Cascade)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
   @@map("flashcard")
+}
+
+model StudySummary {
+  id              String        @id @default(cuid())
+  title           String        // Short title for the summary
+  originalText    String        // Full original text (can be very long)
+  summary         String        // AI-generated summary (multi-paragraph)
+  keyPoints       Json          // Array of highlighted key points with positions
+  language        String        @default("English")
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flashcardSetId  String?       // Optional link to generated flashcards
+  flashcardSet    FlashcardSet? @relation(fields: [flashcardSetId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("study_summary")
 }
