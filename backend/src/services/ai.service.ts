@@ -1,9 +1,9 @@
-const MODEL = "gpt-5-nano";
+const MODEL = "gpt-5-mini"; // gpt-5-nano
 
 export async function chatJson(
   messages: Array<{ role: "system" | "user" | "assistant"; content: string }>,
   responseObject = false,
-  useCase: 'flashcards' | 'summary' = 'flashcards'
+  useCase: "flashcards" | "summary" = "flashcards"
 ) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey)
@@ -11,8 +11,10 @@ export async function chatJson(
 
   // Dynamic system message based on use case
   const systemMessages = {
-    flashcards: "You ONLY reply with JSON matching the provided schema. Every flashcard MUST have a question (q), answer (a), and topic. The topic should be a short category or subject name for the flashcard content.",
-    summary: "You ONLY reply with valid JSON matching the exact schema provided. Generate comprehensive summaries with meaningful key phrases that can be highlighted in the original text."
+    flashcards:
+      "You ONLY reply with JSON matching the provided schema. Every flashcard MUST have a question (q), answer (a), and topic. The topic should be a short category or subject name for the flashcard content.",
+    summary:
+      "You ONLY reply with valid JSON matching the exact schema provided. Generate comprehensive summaries with meaningful key phrases that can be highlighted in the original text.",
   };
 
   const finalMessages = [
@@ -57,13 +59,15 @@ export async function chatJson(
         additionalProperties: false,
         required: ["summary", "keyPhrases"],
         properties: {
-          summary: { 
+          summary: {
             type: "string",
-            description: "Multi-paragraph organized summary with clear structure, maximum 800 words"
+            description:
+              "Multi-paragraph organized summary with clear structure, maximum 800 words",
           },
           keyPhrases: {
             type: "array",
-            description: "Exactly 8-15 important phrases from the original text to highlight",
+            description:
+              "Exactly 8-15 important phrases from the original text to highlight",
             minItems: 8,
             maxItems: 15,
             items: {
@@ -71,33 +75,35 @@ export async function chatJson(
               additionalProperties: false,
               required: ["text", "importance", "category", "startPos"],
               properties: {
-                text: { 
+                text: {
                   type: "string",
-                  description: "Exact phrase from original text, 3-80 characters",
-                  minLength: 3,
-                  maxLength: 80
+                  description:
+                    "Complete meaningful phrase from original text - MUST be a full sentence, complete definition, or self-contained concept. NO fragments or incomplete thoughts. 10-120 characters.",
+                  minLength: 10,
+                  maxLength: 120,
                 },
                 startPos: {
                   type: "integer",
-                  description: "Character position where phrase starts in original text",
-                  minimum: 0
+                  description:
+                    "Character position where phrase starts in original text",
+                  minimum: 0,
                 },
-                importance: { 
-                  type: "string", 
+                importance: {
+                  type: "string",
                   enum: ["high", "medium", "low"],
-                  description: "Importance level of this phrase"
+                  description: "Importance level of this phrase",
                 },
-                category: { 
-                  type: "string", 
+                category: {
+                  type: "string",
                   enum: ["definition", "fact", "concept", "example", "warning"],
-                  description: "Content category of this phrase"
-                }
-              }
-            }
-          }
+                  description: "Content category of this phrase",
+                },
+              },
+            },
+          },
         },
       },
-    }
+    },
   };
 
   const payload: any = {
@@ -110,7 +116,7 @@ export async function chatJson(
           json_schema: schemas[useCase],
         },
     // Reasonable token limit - gpt-5-nano spends all tokens on reasoning
-    max_completion_tokens: 2000,
+    max_completion_tokens: 4000,
   };
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -146,7 +152,7 @@ export async function chatJson(
     contentType: typeof content,
     contentLength: content?.length,
     rawDataKeys: Object.keys(data),
-    useCase
+    useCase,
   });
 
   if (!content) {
@@ -158,17 +164,17 @@ export async function chatJson(
   }
 
   const parsed = JSON.parse(content);
-  
+
   // Handle different response formats based on use case
   if (responseObject) {
     return parsed;
   }
-  
-  if (useCase === 'flashcards') {
+
+  if (useCase === "flashcards") {
     return parsed.cards || [];
-  } else if (useCase === 'summary') {
+  } else if (useCase === "summary") {
     return parsed; // Return the whole summary object with summary and keyPhrases
   }
-  
+
   return parsed;
 }
