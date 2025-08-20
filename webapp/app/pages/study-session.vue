@@ -125,9 +125,21 @@ const generateMCQForCurrentCard = async () => {
     loadingMCQ.value = true
     
     // Use pre-generated MCQ options if available
-    if (currentCard.value.mcqOptions && currentCard.value.mcqOptions.length === 3) {
-      // Create MCQ using pre-generated distractors
-      const allOptions = [...currentCard.value.mcqOptions, currentCard.value.answer]
+    if (currentCard.value.mcqOptions && currentCard.value.mcqOptions.length >= 3) {
+      console.log(`✅ Using pre-generated MCQ options for card ${currentCard.value.id}: ${currentCard.value.mcqOptions.length} options`)
+      
+      // Handle both formats: 3 options (distractors only) or 4 options (distractors + correct)
+      let allOptions
+      if (currentCard.value.mcqOptions.length === 3) {
+        // Old format: 3 distractors, add correct answer
+        console.log('📝 Old format: Adding correct answer to 3 distractors')
+        allOptions = [...currentCard.value.mcqOptions, currentCard.value.answer]
+      } else {
+        // New format: 4 options already include correct answer
+        console.log('🆕 New format: Using all 4 pre-generated options')
+        allOptions = [...currentCard.value.mcqOptions]
+      }
+      
       const shuffled = allOptions.sort(() => Math.random() - 0.5)
       const correctIndex = shuffled.indexOf(currentCard.value.answer)
 
